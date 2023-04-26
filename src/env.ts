@@ -6,6 +6,8 @@ config();
 export const NODE_ENV = process.env.NODE_ENV as 'production' | 'development' | 'test';
 export const HTTP_PORT = parseInt(process.env.HTTP_PORT!, 10);
 export const LOG_PATH = path.resolve(process.env.LOG_PATH!);
+export const SESSION_SECRET = process.env.SESSION_SECRET!;
+export const SESSION_START_BASE_URL = process.env.SESSION_START_BASE_URL!;
 
 export const POSTGRES_HOST = process.env.POSTGRES_HOST!;
 export const POSTGRES_PORT = parseInt(process.env.POSTGRES_PORT!, 10);
@@ -18,3 +20,7 @@ export const SMTP_HOST = process.env.SMTP_HOST!;
 export const SMTP_PORT = parseInt(process.env.SMTP_PORT!, 10);
 export const SMTP_USER = process.env.SMTP_USER!;
 export const SMTP_PASSWORD = process.env.SMTP_PASSWORD!;
+
+export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
+export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
+export const DISCORD_HOME_GUILD_ID = process.env.DISCORD_HOME_GUILD_ID!;
