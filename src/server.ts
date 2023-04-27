@@ -32,6 +32,17 @@ export default function createServer(deps: ServerDeps) {
 
   server.use('/api', createRouter(deps));
 
+  // Bad request handler
+  server.use(((ex, req, res, next) => {
+    if (!ex?.error?.isJoi) next(ex);
+    else {
+      res.status(400).json({
+        type: ex.type,
+        message: ex.error.toString(),
+      });
+    }
+  }) as ErrorRequestHandler);
+
   // Default error handler
   server.use(((ex, req, res, next) => {
     logger.error('Unhandled error:', ex);
