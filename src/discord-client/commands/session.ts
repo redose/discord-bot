@@ -1,4 +1,4 @@
-import type { WebSession } from '@redose/types';
+import type { WebSession, User } from '@redose/types';
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '.';
 
@@ -8,10 +8,27 @@ const sessionCommand: Command = {
     .setDescription('Begins a new session.'),
 
   async execute(interaction, { knex, suuid }) {
-    const sessionId = await knex<WebSession>('webSessions')
-      .insert({ userId: interaction.user.id })
-      .returning('*')
-      .then(([{ id }]) => suuid.fromUUID(id));
+    const sessionId = await knex.transaction(async (trx) => {
+      await Promise.all([
+        trx<WebSession>('webSessions')
+          .where('userId', interaction.user.id)
+          .whereNull('loggedOutAt')
+          .update('loggedOutAt', knex.fn.now()),
+
+        trx<User>('users')
+          .where('id', interaction.user.id)
+          .first()
+          .then(Boolean)
+          .then((userRecordExists) => (userRecordExists
+            ? null
+            : trx<User>('users').insert({ id: interaction.user.id }))),
+      ]);
+
+      return trx<WebSession>('webSessions')
+        .insert({ userId: interaction.user.id })
+        .returning('id')
+        .then(([{ id }]) => suuid.fromUUID(id));
+    });
 
     await interaction.reply({
       ephemeral: true,

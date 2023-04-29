@@ -4,17 +4,17 @@ import type { ApplyRoutes } from '.';
 
 const sessionRoutes: ApplyRoutes = (router, { validator, knex, suuid }) => {
   router.post(
-    '/session/:id',
+    '/session/:sessionId',
 
     validator.params(Joi.object({
-      id: Joi.string().required(),
+      sessionId: Joi.string().required(),
     })
       .required()),
 
     async (req, res) => {
       const session = await knex<WebSession>('webSessions')
         .select('userId', 'loggedOutAt', 'createdAt')
-        .where('id', suuid.toUUID(req.params.id))
+        .where('id', suuid.toUUID(req.params.sessionId))
         .orderBy('createdAt', 'DESC')
         .first();
 
