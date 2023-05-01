@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import PromiseRouter from 'express-promise-router';
 import { createValidator, ExpressJoiInstance } from 'express-joi-validation';
-import userRoutes from './user';
+import userRoutes from './user/user';
 import sessionRoutes from './session';
 import { joiErrorHandler } from '../middleware';
 import type { ServerDeps } from '../server';

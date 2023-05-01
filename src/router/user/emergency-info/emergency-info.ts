@@ -1,9 +1,9 @@
 import type { EmergencyContact, User } from '@redose/types';
 import Joi from 'joi';
-import type { ApplyRoutes } from '.';
-import { meUrlParam } from '../middleware';
+import type { ApplyRoutes } from '../..';
+import { meUrlParam } from '../../../middleware';
 
-const userRoutes: ApplyRoutes = (router, { validator, knex }) => {
+const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
   router.get(
     '/user/:userId/emergency-info',
 
@@ -36,8 +36,8 @@ const userRoutes: ApplyRoutes = (router, { validator, knex }) => {
     },
   );
 
-  router.post(
-    '/user/:userId/emergency-info/contact',
+  router.patch(
+    '/user/:userId/emergency-info',
 
     validator.params(Joi.object({
       userId: Joi.string().required(),
@@ -45,26 +45,36 @@ const userRoutes: ApplyRoutes = (router, { validator, knex }) => {
       .required()),
 
     validator.body(Joi.object({
-      contactId: Joi.string().required(),
-      contactEmail: Joi.string().trim().email(),
+      emergencyNotes: Joi.string().trim(),
     })
       .required()),
 
     meUrlParam(),
 
     async (req, res) => {
-      const emergencyContact = await knex<EmergencyContact>('emergencyContacts')
-        .insert({
-          userId: res.locals.userId,
-          contactId: req.body.contactId,
-          contactEmail: req.body.contactEmail,
-        })
-        .returning('*')
-        .then(([a]) => a);
+      const updatedUser = await knex.transaction(async (trx) => {
+        const baseSql = trx<User>('users').where('id', res.locals.userId);
 
-      res.status(201).json({ emergencyContact });
+        const updateSql = baseSql.clone();
+        if (req.body.emergencyNotes) {
+          updateSql
+            .update('emergencyNotes', req.body.emergencyNotes || null)
+            .update('emergencyNotesLastUpdatedAt', knex.fn.now());
+        }
+
+        return baseSql
+          .select(
+            'id',
+            'emergencyNotes',
+            'emergencyNotesLastUpdatedAt',
+            'createdAt',
+          )
+          .first();
+      });
+
+      res.json(updatedUser);
     },
   );
 };
 
-export default userRoutes;
+export default userEmergencyRoutes;
