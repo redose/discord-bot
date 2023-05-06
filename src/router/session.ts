@@ -15,7 +15,6 @@ const sessionRoutes: ApplyRoutes = (router, { validator, knex, suuid }) => {
       const session = await knex<WebSession>('webSessions')
         .select('userId', 'loggedOutAt', 'createdAt')
         .where('id', suuid.toUUID(req.params.sessionId))
-        .orderBy('createdAt', 'DESC')
         .first();
 
       if (!session) res.sendStatus(404);

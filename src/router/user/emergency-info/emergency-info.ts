@@ -1,11 +1,13 @@
 import type { EmergencyContact, User } from '@redose/types';
 import Joi from 'joi';
 import type { ApplyRoutes } from '../..';
-import { meUrlParam } from '../../../middleware';
+import { isAuthenticated, meUrlParam } from '../../../middleware';
 
 const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
   router.get(
     '/user/:userId/emergency-info',
+
+    isAuthenticated(),
 
     validator.params(Joi.object({
       userId: Joi.string().required(),
@@ -15,7 +17,7 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
     meUrlParam(),
 
     async (req, res) => {
-      const emergencyInfo = await Promise.all([
+      const { userId, ...emergencyInfo } = await Promise.all([
         knex<User>('users')
           .select(
             'id AS userId',
@@ -32,12 +34,15 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
       ])
         .then(([user, contacts]) => ({ ...user, contacts }));
 
-      res.json({ emergencyInfo });
+      if (res.locals.userId !== userId) res.sendStatus(403);
+      else res.json({ emergencyInfo });
     },
   );
 
   router.patch(
     '/user/:userId/emergency-info',
+
+    isAuthenticated(),
 
     validator.params(Joi.object({
       userId: Joi.string().required(),
@@ -45,7 +50,8 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
       .required()),
 
     validator.body(Joi.object({
-      emergencyNotes: Joi.string().trim(),
+      notes: Joi.string().trim().allow(null),
+      contactPolicy: Joi.string().valid('WHITELIST_ONLY', 'WHITELIST_AND_STAFF', 'DISABLED'),
     })
       .required()),
 
@@ -56,18 +62,21 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
         const baseSql = trx<User>('users').where('id', res.locals.userId);
 
         const updateSql = baseSql.clone();
-        if (req.body.emergencyNotes) {
+        if (req.body.notes || req.body.notes === null) {
           updateSql
-            .update('emergencyNotes', req.body.emergencyNotes || null)
+            .update('emergencyNotes', req.body.notes)
             .update('emergencyNotesLastUpdatedAt', knex.fn.now());
         }
+        if (req.body.contactPolicy) {
+          updateSql.update('emergencyContactPolicy', req.body.contactPolicy);
+        }
 
+        await updateSql;
         return baseSql
           .select(
-            'id',
-            'emergencyNotes',
-            'emergencyNotesLastUpdatedAt',
-            'createdAt',
+            'emergencyNotes AS notes',
+            'emergencyNotesLastUpdatedAt AS notesLastUpdatedAt',
+            'emergencyContactPolicy as contactPolicy',
           )
           .first();
       });

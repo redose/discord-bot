@@ -15,6 +15,18 @@ export async function up(knex: Knex): Promise<void> {
       table.timestamp('emergencyNotesLastUpdatedAt');
 
       table
+        .enum('emergencyContactPolicy', [
+          'WHITELIST_ONLY',
+          'WHITELIST_AND_STAFF',
+          'DISABLED',
+        ], {
+          useNative: true,
+          enumName: 'emergency_contact_policy',
+        })
+        .notNullable()
+        .defaultTo('DISABLED');
+
+      table
         .timestamp('createdAt')
         .notNullable()
         .defaultTo(knex.fn.now());
@@ -62,7 +74,7 @@ export async function up(knex: Knex): Promise<void> {
         .inTable('users')
         .onDelete('CASCADE');
 
-      table.string('contactEmail', 320);
+      table.string('email', 320);
 
       table
         .timestamp('createdAt')
@@ -77,5 +89,6 @@ export async function down(knex: Knex): Promise<void> {
     .dropTableIfExists('webSessions')
     .dropTableIfExists('users');
 
+  await knex.raw('DROP TYPE IF EXISTS "emergency_contact_policy"');
   await knex.raw('DROP EXTENSION IF EXISTS "uuid-ossp"');
 }

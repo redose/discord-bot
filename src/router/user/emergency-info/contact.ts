@@ -1,11 +1,13 @@
 import type { EmergencyContact } from '@redose/types';
 import Joi from 'joi';
 import type { ApplyRoutes } from '../..';
-import { meUrlParam } from '../../../middleware';
+import { isAuthenticated, meUrlParam } from '../../../middleware';
 
 const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) => {
   router.post(
     '/user/:userId/emergency-info/contact',
+
+    isAuthenticated(),
 
     validator.params(Joi.object({
       userId: Joi.string().required(),
@@ -13,24 +15,45 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
       .required()),
 
     validator.body(Joi.object({
-      contactId: Joi.string().required(),
-      contactEmail: Joi.string().trim().email(),
+      contactId: Joi.string(),
+      email: Joi.string().trim().email(),
     })
       .required()),
 
     meUrlParam(),
 
     async (req, res) => {
-      const emergencyContact = await knex<EmergencyContact>('emergencyContacts')
-        .insert({
-          userId: res.locals.userId,
-          contactId: req.body.contactId,
-          contactEmail: req.body.contactEmail,
-        })
-        .returning('*')
-        .then(([a]) => a);
+      if (!req.body.contactId && !req.body.email) res.sendStatus(403);
+      else {
+        const emergencyContact = await knex<EmergencyContact>('emergencyContacts')
+          .insert({
+            userId: res.locals.userId,
+            contactId: req.body.contactId,
+            email: req.body.email,
+          })
+          .returning('*')
+          .then(([a]) => a);
 
-      res.status(201).json({ emergencyContact });
+        res.status(201).json({ emergencyContact });
+      }
+    },
+  );
+
+  router.delete(
+    '/user/:userId/emergency-info/contact/:contactId',
+
+    isAuthenticated(),
+
+    validator.params(Joi.object({
+      userId: Joi.string().required(),
+      contactId: Joi.string().required(),
+    })
+      .required()),
+
+    meUrlParam(),
+
+    async (req, res) => {
+      const emergencyContact = await knex<EmergencyContact>('emergencyContacts');
     },
   );
 };
