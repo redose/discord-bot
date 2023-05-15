@@ -5,6 +5,7 @@ import createKnex, { Knex } from 'knex';
 import knexConfig from '../knexfile';
 import createLogger from './logger';
 import createDiscordClient from './discord-client';
+import createMailService from './mail';
 import createServer from './server';
 import { HTTP_PORT } from './env';
 
@@ -12,26 +13,42 @@ export interface BaseDeps {
   logger: Logger;
   knex: Knex;
   suuid: Translator;
+  mail: Awaited<ReturnType<typeof createMailService>>;
 }
 
 export interface Deps extends BaseDeps {
   discordClient: Client;
 }
 
-const baseDeps = {
-  logger: createLogger(),
-  suuid: shortUUID(),
-  knex: createKnex(knexConfig),
-};
+async function createRedoseApi() {
+  const logger = createLogger();
 
-createDiscordClient(baseDeps)
-  .then((discordClient) => {
-    const server = createServer({ ...baseDeps, discordClient });
+  function createErrorHandler(message: string) {
+    return (ex: Error) => {
+      logger.error(`${message}:`, ex);
+      process.exit(1);
+    };
+  }
 
-    return new Promise((resolve) => {
-      server.listen({ port: HTTP_PORT }, () => {
-        baseDeps.logger.info(`Server listening on http://localhost:${HTTP_PORT}/`);
-        resolve(server);
-      });
-    });
-  });
+  const discordClientDeps = {
+    logger,
+    knex: createKnex(knexConfig),
+    suuid: shortUUID(),
+    mail: await createMailService(logger)
+      .catch(createErrorHandler('Error creating mail service'))
+  };
+
+  const serverDeps = {
+    ...discordClientDeps,
+    discordClient: await createDiscordClient(discordClientDeps)
+      .catch(createErrorHandler('Error creating Discord client')),
+  };
+
+  return new Promise<void>((resolve) => {
+    const server = createServer(serverDeps);
+    server.listen({ port: HTTP_PORT }, resolve);
+  })
+    .catch(createErrorHandler('Error creating HTTP server'));
+}
+
+createRedoseApi();

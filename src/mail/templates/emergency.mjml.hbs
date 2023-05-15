@@ -1,0 +1,23 @@
+<mjml>
+  <mj-head>
+    <mj-title>EMERGENCY @ RE:DOSE</mj-title>
+    <mj-preview>EMERGENCY - A USER IS IN DANGER</mj-preview>
+    <mj-include path="head.mjml" />
+    <mj-class name="user" font-weight="bold" />
+  </mj-head>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-text mj-class="primary-heading">EMERGENCY</mj-text>
+
+        <mj-text>
+          An emergency warning for
+          <mj-text class="user">{{userDisplayName}}</mj-text>
+          has been triggered.
+        </mj-text>
+
+        <mj-button href="{{respondUrl}}">Respond</mj-button>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
