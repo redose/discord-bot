@@ -24,7 +24,7 @@ const sessionRoutes: ApplyRoutes = (router, {
         .first();
 
       if (!session) res.sendStatus(404);
-      else if (req.session.userId !== session.userId) res.sendStatus(403);
+      else if (req.session.userId) res.sendStatus(403);
       else if (session.loggedOutAt) res.sendStatus(440);
       else {
         const { loggedOutAt, ...xs } = session;
