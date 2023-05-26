@@ -32,6 +32,11 @@ export default function createServer(deps: ServerDeps) {
   }));
 
   server.use('/api', createRouter(deps));
+
+  server.use((req, res) => {
+    res.sendStatus(404);
+  });
+
   server.use(defaultErrorHandler(deps));
   return server;
 }

@@ -22,6 +22,9 @@ module.exports = {
       parserOptions: {
         project: './tsconfig.json',
       },
+      rules: {
+        '@typescript-eslint/lines-between-class-members': 0,
+      },
     },
     {
       files: [
