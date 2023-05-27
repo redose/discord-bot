@@ -36,5 +36,4 @@ async function createTestServer() {
   };
 }
 
-export default createTestServer();
 export type TestServer = Awaited<ReturnType<typeof createTestServer>>;

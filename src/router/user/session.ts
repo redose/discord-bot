@@ -6,7 +6,6 @@ const sessionRoutes: ApplyRoutes = (router, {
   logger,
   validator,
   knex,
-  suuid,
 }) => {
   router.post(
     '/user/session/:sessionId',
@@ -19,12 +18,11 @@ const sessionRoutes: ApplyRoutes = (router, {
     async (req, res) => {
       const session = await knex<WebSession>('webSessions')
         .select('userId', 'loggedOutAt', 'createdAt')
-        .where('id', suuid.toUUID(req.params.sessionId))
+        .where('id', req.params.sessionId)
         .orderBy('createdAt', 'DESC')
         .first();
 
       if (!session) res.sendStatus(404);
-      else if (req.session.userId) res.sendStatus(403);
       else if (session.loggedOutAt) res.sendStatus(440);
       else {
         const { loggedOutAt, ...xs } = session;
