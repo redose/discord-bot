@@ -2,17 +2,14 @@ import type { User, WebSession } from '@redose/types';
 import request from 'supertest';
 import type { Express } from 'express';
 import type { Knex } from 'knex';
-import type { MailService } from '../../../mail';
 import { createServer, mockUuid } from '../../../../tests/mocks';
 
-let mail: MailService;
 let server: Express;
 let knex: Knex;
 let testUser: User;
 
 beforeAll(async () => {
   const testServer = await createServer();
-  mail = testServer.mail;
   server = testServer.server;
   knex = testServer.knex;
 
