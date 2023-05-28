@@ -35,7 +35,7 @@ async function createRedoseApi() {
     knex: createKnex(knexConfig),
     suuid: shortUUID(),
     mail: await createMailService(logger)
-      .catch(createErrorHandler('Error creating mail service'))
+      .catch(createErrorHandler('Error creating mail service')),
   };
 
   const serverDeps = {

@@ -1,30 +1,31 @@
 import type { WebSession } from '@redose/types';
 import Joi from 'joi';
 import type { ApplyRoutes } from '..';
+import { isAuthenticated } from '../../middleware';
 
 const sessionRoutes: ApplyRoutes = (router, {
   logger,
   validator,
   knex,
-  suuid,
 }) => {
+  const sessionParamValidator = validator.params(Joi.object({
+    sessionId: Joi.string().required(),
+  })
+    .required());
+
   router.post(
     '/user/session/:sessionId',
-
-    validator.params(Joi.object({
-      sessionId: Joi.string().required(),
-    })
-      .required()),
+    sessionParamValidator,
+    isAuthenticated(true),
 
     async (req, res) => {
       const session = await knex<WebSession>('webSessions')
+        .where('id', req.params.sessionId)
         .select('userId', 'loggedOutAt', 'createdAt')
-        .where('id', suuid.toUUID(req.params.sessionId))
         .orderBy('createdAt', 'DESC')
         .first();
 
       if (!session) res.sendStatus(404);
-      else if (req.session.userId !== session.userId) res.sendStatus(403);
       else if (session.loggedOutAt) res.sendStatus(440);
       else {
         const { loggedOutAt, ...xs } = session;
@@ -36,6 +37,29 @@ const sessionRoutes: ApplyRoutes = (router, {
           } else res.sendStatus(200);
         });
       }
+    },
+  );
+
+  router.post(
+    '/user/session/:sessionId/logout',
+    sessionParamValidator,
+    isAuthenticated(),
+
+    async (req, res) => {
+      await knex.transaction(async (trx) => Promise.all([
+        trx<WebSession>('webSessions')
+          .where('id', req.params.sessionId)
+          .update('loggedOutAt', new Date()),
+
+        new Promise<void>((resolve, reject) => {
+          req.session.destroy((ex: Error) => {
+            if (ex) reject(ex);
+            else resolve();
+          });
+        }),
+      ]));
+
+      res.sendStatus(200);
     },
   );
 };

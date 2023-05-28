@@ -21,8 +21,9 @@ export default function createServer(deps: ServerDeps) {
   const ConnectSession = createConnectSession(session);
   server.use(session({
     secret: SESSION_SECRET,
+    name: 'sid',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     store: new ConnectSession({ knex }),
     cookie: {
       maxAge: 1200000, // 20mins
@@ -32,6 +33,11 @@ export default function createServer(deps: ServerDeps) {
   }));
 
   server.use('/api', createRouter(deps));
+
+  server.use((req, res) => {
+    res.sendStatus(404);
+  });
+
   server.use(defaultErrorHandler(deps));
   return server;
 }

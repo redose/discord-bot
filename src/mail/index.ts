@@ -21,7 +21,7 @@ const TEMPLATE_NAMES: Array<keyof Emails> = [
   'verify',
 ];
 
-export default async function createMailService(logger: Logger): Promise<Emails> {
+export default async function createMailService(logger: Logger) {
   const transport = createTransport({
     secure: SMTP_SECURE,
     host: SMTP_HOST,
@@ -47,11 +47,17 @@ export default async function createMailService(logger: Logger): Promise<Emails>
     });
   }
 
-  return Object.fromEntries(await Promise.all(TEMPLATE_NAMES
-    .map((name) => compileTemplate(name)
-      .then((send) => [name, send])
-      .catch((ex) => {
-        logger.error('Failed to compile template:', ex);
-        return Promise.reject(ex);
-      }))));
+  return {
+    send: Object.fromEntries(await Promise.all(TEMPLATE_NAMES
+      .map((name) => compileTemplate(name)
+        .then((send) => [name, send])
+        .catch((ex) => {
+          logger.error('Failed to compile template:', ex);
+          return Promise.reject(ex);
+        })))),
+
+    async close() {
+      return transport.close();
+    },
+  };
 }

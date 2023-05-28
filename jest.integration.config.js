@@ -4,7 +4,13 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  clearMocks: true,
+  globalSetup: '<rootDir>/tests/setup.ts',
+  globalTeardown: '<rootDir>/tests/teardown.ts',
+  setupFilesAfterEnv: [
+    '<rootDir>/tests/setup-env.ts',
+  ],
   testMatch: [
-    './tests/**/*.spec.ts',
+    '<rootDir>/tests/spec/**/*.spec.ts',
   ],
 };
