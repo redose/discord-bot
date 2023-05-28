@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { config } from 'dotenv';
 
-config();
+config({ path: process.env.NODE_ENV !== 'test' ? undefined : '.env.test' });
 
 export const NODE_ENV = process.env.NODE_ENV as 'production' | 'development' | 'test';
 export const HTTP_PORT = parseInt(process.env.HTTP_PORT!, 10);
@@ -15,11 +15,11 @@ export const POSTGRES_USER = process.env.POSTGRES_USER!;
 export const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD!;
 export const POSTGRES_DATABASE = process.env.POSTGRES_DATABASE!;
 
-export const EMAIL_FROM = process.env.EMAIL_FROM!;
 export const SMTP_HOST = process.env.SMTP_HOST!;
 export const SMTP_PORT = parseInt(process.env.SMTP_PORT!, 10);
 export const SMTP_USER = process.env.SMTP_USER!;
 export const SMTP_PASSWORD = process.env.SMTP_PASSWORD!;
+export const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
 
 export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;

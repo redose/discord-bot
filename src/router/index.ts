@@ -2,7 +2,9 @@ import express, { Router } from 'express';
 import PromiseRouter from 'express-promise-router';
 import { createValidator, ExpressJoiInstance } from 'express-joi-validation';
 import userRoutes from './user';
+import { joiErrorHandler } from '../middleware';
 import type { ServerDeps } from '../server';
+import { applyRoutes } from '../utils';
 
 interface RouteDeps extends ServerDeps {
   validator: ExpressJoiInstance;
@@ -19,10 +21,8 @@ export default function createRouter(serverDeps: ServerDeps) {
     validator: createValidator({ passError: true }),
   };
 
-  [
-    userRoutes,
-  ]
-    .forEach((applyRoutes) => applyRoutes(router, deps));
+  applyRoutes(userRoutes)(router, deps);
 
+  router.use(joiErrorHandler());
   return router;
 }

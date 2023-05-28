@@ -18,5 +18,5 @@ Promise.all([
   }),
 ])
   .then((res) => {
-    console.log('Successfully registered commands:', res);
+    console.log('Successfully registered commands:', res); // eslint-disable-line
   });
