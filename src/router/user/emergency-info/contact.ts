@@ -31,11 +31,10 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
       email: Joi.string().trim().email(),
     })
       .required()),
-
     meUrlParam(),
 
     async (req, res) => {
-      if (!req.body.contactId && !req.body.email) res.sendStatus(403);
+      if (!req.body.contactId && !req.body.email) res.sendStatus(400);
       else {
         const contact = await knex<EmergencyContact>('emergencyContacts')
           .insert({
