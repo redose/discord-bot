@@ -11,6 +11,6 @@ module.exports = {
     '<rootDir>/tests/setup-env.ts',
   ],
   testMatch: [
-    '<rootDir>/tests/spec/**/*.spec.ts',
+    '<rootDir>/**/__tests__/*.spec.ts',
   ],
 };

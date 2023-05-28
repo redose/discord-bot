@@ -10,6 +10,7 @@ import createDiscordClient from '../../src/discord-client';
 import createServer from '../../src/server';
 
 jest.mock('../../src/logger');
+jest.mock('../../src/mail');
 jest.mock('../../src/discord-client');
 
 interface MockOverrides {

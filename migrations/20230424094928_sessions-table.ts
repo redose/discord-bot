@@ -71,8 +71,7 @@ export async function up(knex: Knex): Promise<void> {
       table
         .text('contactId')
         .references('id')
-        .inTable('users')
-        .onDelete('CASCADE');
+        .inTable('users');
 
       table.string('email', 320);
 

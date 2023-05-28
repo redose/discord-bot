@@ -1,14 +1,16 @@
 import type { RequestHandler } from 'express';
 
-export default function meUrlParam(paramKey: string = 'userId'): RequestHandler {
+interface Options {
+  key?: string;
+  match?: string;
+}
+
+export default function meUrlParam(options?: Options): RequestHandler {
   return (req, res, next) => {
-    if (!req.session.userId) res.sendStatus(401);
-    else {
-      const value = req.params[paramKey];
-      Object.assign(res.locals, {
-        userId: value === 'me' ? req.session.userId : value,
-      });
-      next();
-    }
+    const value = req.params[options?.key || 'userId'];
+    Object.assign(res.locals, {
+      userId: value === (options?.match || 'me') ? req.session.userId : value,
+    });
+    next();
   };
 }
