@@ -27,13 +27,11 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
           .where('id', res.locals.userId)
           .first(),
 
-        knex<EmergencyContact>('emergencyContacts')
-          .select('id', 'contactEmail AS email', 'createdAt')
-          .where('userId', res.locals.userId),
+        knex<EmergencyContact>('emergencyContacts').where('userId', res.locals.userId),
       ]);
 
       if (!user) res.sendStatus(404);
-      else if (res.locals.userId !== user.id) res.sendStatus(403);
+      else if (res.locals.userId !== req.session.userId) res.sendStatus(403);
       else res.json({ ...user, contacts });
     },
   );

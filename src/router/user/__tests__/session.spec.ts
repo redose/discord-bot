@@ -1,18 +1,20 @@
 import type { User, WebSession } from '@redose/types';
 import request from 'supertest';
 import type { Express } from 'express';
-import knex from '../mocks/knex';
-import createMail from '../../src/mail';
-import { createServer, mockUuid } from '../mocks';
+import type { Knex } from 'knex';
+import type { MailService } from '../../../mail';
+import { createServer, mockUuid } from '../../../../tests/mocks';
 
-let mail: Awaited<ReturnType<typeof createMail>>;
+let mail: MailService;
 let server: Express;
+let knex: Knex;
 let testUser: User;
 
 beforeAll(async () => {
   const testServer = await createServer();
   mail = testServer.mail;
   server = testServer.server;
+  knex = testServer.knex;
 
   testUser = await knex<User>('users')
     .insert({ id: 'firstMockUserId' })
@@ -21,9 +23,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => Promise.all([
-  mail.close(),
-  Promise.all(['users', 'webSessions'].map((tableName) => knex(tableName).del())),
-]));
+  knex('webSessions').del(),
+  knex('emergencyContacts').del(),
+])
+  .then(() => knex('users').del()));
 
 describe('POST /user/session/:sessionId', () => {
   let sessionId: string;

@@ -21,7 +21,7 @@ const TEMPLATE_NAMES: Array<keyof Emails> = [
   'verify',
 ];
 
-export default async function createMailService(logger: Logger) {
+export default async function createMail(logger: Logger) {
   const transport = createTransport({
     secure: SMTP_SECURE,
     host: SMTP_HOST,
@@ -61,3 +61,5 @@ export default async function createMailService(logger: Logger) {
     },
   };
 }
+
+export type MailService = Awaited<ReturnType<typeof createMail>>;

@@ -19,7 +19,6 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
 
   router.post(
     '/user/:userId/emergency-info/contact',
-
     isAuthenticated(),
 
     validator.params(Joi.object({
