@@ -1,4 +1,4 @@
-import type { EmergencyContact } from '@redose/types';
+import type { User, EmergencyContact } from '@redose/types';
 import request from 'supertest';
 import type { Express } from 'express';
 import type { Knex } from 'knex';
@@ -96,5 +96,62 @@ describe('POST /user/:userId/emergency-info/contact', () => {
         email: 'radman@coolpeople.net',
       })
       .expect(201);
+  });
+});
+
+describe('PATCH /user/emergency-info/contact/:contactId', () => {
+  let user: User;
+  let contactUser: User;
+  let sessionToken: string;
+  let contact: EmergencyContact;
+
+  beforeEach(async () => {
+    user = await createUser('efecfe6e-5a7d-4e1a-94e4-4ebb531194f5');
+    contactUser = await createUser('6c8da202-a2e2-41e0-a918-ce707c276c92');
+    sessionToken = await createSession(server, user.id).then(({ token }) => token);
+    contact = await request(server)
+      .post(`/api/user/${user.id}/emergency-info/contact`)
+      .set('Cookie', sessionToken)
+      .send({
+        contactId: contactUser.id,
+        email: 'radman@coolpeople.net',
+      })
+      .expect(201)
+      .then((res) => res.body);
+  });
+
+  test('user must be authenticated', async () => request(server)
+    .patch(`/api/user/emergency-info/contact/${contact.id}`)
+    .expect(401));
+
+  test('updates contact', async () => {
+    await expect(
+      request(server)
+        .patch(`/api/user/emergency-info/contact/${contact.id}`)
+        .set('Cookie', sessionToken)
+        .send({ email: 'notcool@aol.com' })
+        // .expect(200)
+        .then((res) => res.body),
+    )
+      .resolves.toEqual({
+        id: expect.stringContaining('-'),
+        userId: user.id,
+        contactId: contactUser.id,
+        email: 'notcool@aol.com',
+        createdAt: expect.anything(),
+      });
+
+    return expect(
+      knex<EmergencyContact>('emergencyContacts')
+        .where('id', contact.id)
+        .first(),
+    )
+      .resolves.toEqual({
+        id: expect.stringContaining('-'),
+        userId: user.id,
+        contactId: contactUser.id,
+        email: 'notcool@aol.com',
+        createdAt: expect.anything(),
+      });
   });
 });

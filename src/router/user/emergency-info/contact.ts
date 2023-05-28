@@ -50,20 +50,18 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
     },
   );
 
-  const validateContactParams = validator.params(Joi.object({
-    userId: Joi.string().required(),
-    contactId: Joi.string().required(),
-  })
-    .required());
-
   router.patch(
-    '/user/emergency-info/contact/:contactId',
+    '/user/emergency-info/contact/:id',
     isAuthenticated(),
-    validateContactParams,
+
+    validator.params(Joi.object({
+      id: Joi.string().required(),
+    })
+      .required()),
 
     validator.body(Joi.object({
-      contactId: Joi.string().valid(null),
-      email: Joi.string().trim().email().valid(null),
+      contactId: Joi.string(),
+      email: Joi.string().trim().email(),
     })
       .required()),
 
@@ -83,11 +81,11 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
     async (req, res) => {
       const emergencyInfo = await knex.transaction(async (trx) => {
         const baseSql = trx<EmergencyContact>('emergencyContacts')
-          .where('id', req.params.contactId);
+          .where('id', req.params.id);
 
         const updateSql = baseSql.clone();
-        if (req.body.contactId) updateSql.update('contactId', req.body.contactId);
-        if (req.body.email) updateSql.update('email', req.body.email);
+        if (req.body.contactId) updateSql.update('contactId', req.body.contactId || null);
+        if (req.body.email) updateSql.update('email', req.body.email || null);
         await updateSql;
         return baseSql.first();
       });
@@ -99,7 +97,12 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
   router.delete(
     '/user/emergency-info/contact/:contactId',
     isAuthenticated(),
-    validateContactParams,
+
+    validator.params(Joi.object({
+      contactId: Joi.string().required(),
+    })
+      .required()),
+
     meUrlParam(),
     authorizeContact(),
 
@@ -107,10 +110,10 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
       const baseSql = knex<EmergencyContact>('emergencyContacts')
         .where('id', req.params.contactId);
 
-      const emergencyContact = await baseSql.clone().select('userId').first();
+      const contact = await baseSql.clone().select('userId').first();
 
-      if (!emergencyContact) res.sendStatus(404);
-      else if (emergencyContact.userId !== res.locals.userId) res.sendStatus(403);
+      if (!contact) res.sendStatus(404);
+      else if (contact.userId !== res.locals.userId) res.sendStatus(403);
       else {
         await baseSql.del();
         res.sendStatus(200);
