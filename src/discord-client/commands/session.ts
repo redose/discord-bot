@@ -1,33 +1,28 @@
-import type { WebSession, User } from '@redose/types';
+import type { WebSession } from '@redose/types';
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '.';
+import { ensureUserExists } from '../../utils';
 
 const sessionCommand: Command = {
   meta: new SlashCommandBuilder()
     .setName('session')
     .setDescription('Begins a new session.'),
 
-  async execute(interaction, { knex, suuid }) {
+  async execute(interaction, { knex }) {
     const sessionId = await knex.transaction(async (trx) => {
       await Promise.all([
+        ensureUserExists(trx, interaction.user.id),
+
         trx<WebSession>('webSessions')
           .where('userId', interaction.user.id)
           .whereNull('loggedOutAt')
           .update('loggedOutAt', knex.fn.now()),
-
-        trx<User>('users')
-          .where('id', interaction.user.id)
-          .first()
-          .then(Boolean)
-          .then((userRecordExists) => (userRecordExists
-            ? null
-            : trx<User>('users').insert({ id: interaction.user.id }))),
       ]);
 
       return trx<WebSession>('webSessions')
         .insert({ userId: interaction.user.id })
         .returning('id')
-        .then(([{ id }]) => suuid.fromUUID(id));
+        .then(([{ id }]) => id);
     });
 
     await interaction.reply({
