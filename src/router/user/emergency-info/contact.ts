@@ -5,10 +5,30 @@ import type { ApplyRoutes } from '../..';
 import { isAuthenticated, meUrlParam } from '../../../middleware';
 import { ensureUserExists } from '../../../utils';
 
-const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) => {
+interface EmergencyContactTable extends Omit<EmergencyContact, 'contact'> {
+  contactId: string;
+}
+
+const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex, discordClient }) => {
+  async function getDiscordContact(
+    { contactId, ...record }: EmergencyContactTable,
+  ): Promise<EmergencyContact> {
+    if (!contactId) return record;
+    const discordUser = await discordClient.users.cache.get(contactId);
+    if (!discordUser) throw new Error('Could not get user from Discord API');
+    return {
+      ...record,
+      contact: {
+        id: contactId,
+        username: `${discordUser.username}#${discordUser.discriminator}`,
+        avatar: discordUser.avatar || '/user/default-avatar.png',
+      },
+    };
+  }
+
   function authorize(): RequestHandler {
     return async (req, res, next) => {
-      const ownerId = await knex<EmergencyContact>('emergencyContacts')
+      const ownerId = await knex<EmergencyContactTable>('emergencyContacts')
         .where('id', req.params.contactId)
         .first()
         .then((record) => record?.userId);
@@ -29,10 +49,14 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
       .required()),
 
     validator.body(Joi.object({
-      contactId: Joi.string(),
-      email: Joi.string().trim().email(),
-    })
-      .required()),
+      contactId: Joi.string().optional().allow(null),
+      email: Joi
+        .string()
+        .trim()
+        .email()
+        .optional()
+        .allow(null),
+    })),
 
     meUrlParam(),
 
@@ -41,14 +65,14 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
       else {
         const contact = await knex.transaction(async (trx) => {
           if (req.body.contactId) await ensureUserExists(knex, req.body.contactId);
-          return trx<EmergencyContact>('emergencyContacts')
+          return trx<EmergencyContactTable>('emergencyContacts')
             .insert({
               userId: res.locals.userId,
               contactId: req.body.contactId,
               email: req.body.email,
             })
             .returning('*')
-            .then(([a]) => a);
+            .then(([record]) => getDiscordContact(record));
         });
 
         res.status(201).json(contact);
@@ -86,7 +110,7 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
 
     async (req, res) => {
       const emergencyInfo = await knex.transaction(async (trx) => {
-        const updateSql = trx<EmergencyContact>('emergencyContacts')
+        const updateSql = trx<EmergencyContactTable>('emergencyContacts')
           .where('id', req.params.id);
 
         if (req.body.contactId) {
@@ -97,9 +121,10 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
         if (req.body.email) updateSql.update('email', req.body.email || null);
         await updateSql;
 
-        return trx<EmergencyContact>('emergencyContacts')
+        return trx<EmergencyContactTable>('emergencyContacts')
           .where('id', req.params.id)
-          .first();
+          .first()
+          .then((record) => getDiscordContact(record!));
       });
 
       res.json(emergencyInfo);
@@ -119,7 +144,7 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex }) =>
     authorize(),
 
     async (req, res) => {
-      await knex<EmergencyContact>('emergencyContacts')
+      await knex<EmergencyContactTable>('emergencyContacts')
         .where('id', req.params.contactId)
         .del();
 

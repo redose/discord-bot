@@ -43,8 +43,13 @@ export async function up(knex: Knex): Promise<void> {
         .text('userId')
         .notNullable()
         .references('id')
-        .inTable('users')
-        .onDelete('CASCADE');
+        .inTable('users');
+
+      table
+        .text('guildId')
+        .notNullable()
+        .references('id')
+        .inTable('guilds');
 
       table.timestamp('loggedOutAt');
 
@@ -65,8 +70,7 @@ export async function up(knex: Knex): Promise<void> {
         .text('userId')
         .notNullable()
         .references('id')
-        .inTable('users')
-        .onDelete('CASCADE');
+        .inTable('users');
 
       table
         .text('contactId')
