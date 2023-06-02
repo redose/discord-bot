@@ -1,7 +1,11 @@
-import type { WebSession } from '@redose/types';
+import type {
+  Guild,
+  User,
+  GuildUser,
+  WebSession,
+} from '@redose/types';
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '.';
-import { ensureUserExists } from '../../utils';
 
 const sessionCommand: Command = {
   meta: new SlashCommandBuilder()
@@ -11,16 +15,27 @@ const sessionCommand: Command = {
   async execute(interaction, { knex }) {
     const sessionId = await knex.transaction(async (trx) => {
       await Promise.all([
-        ensureUserExists(trx, interaction.user.id),
-
         trx<WebSession>('webSessions')
           .where('userId', interaction.user.id)
           .whereNull('loggedOutAt')
           .update('loggedOutAt', knex.fn.now()),
+
+        trx<User>('users')
+          .where('id', interaction.user.id)
+          .first()
+          .then((a) => (a ? null : trx<User>('users').insert({ id: interaction.user.id }))),
+
+        trx<Guild>('guilds')
+          .where('id', interaction.guild!.id)
+          .first()
+          .then((a) => (a ? null : trx<Guild>('guilds').insert({ id: interaction.user.id }))),
       ]);
 
       return trx<WebSession>('webSessions')
-        .insert({ userId: interaction.user.id })
+        .insert({
+          userId: interaction.user.id,
+          guildId: interaction.guild!.id,
+        })
         .returning('id')
         .then(([{ id }]) => id);
     });

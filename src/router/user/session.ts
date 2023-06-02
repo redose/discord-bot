@@ -2,6 +2,7 @@ import type { WebSession } from '@redose/types';
 import Joi from 'joi';
 import type { ApplyRoutes } from '..';
 import { isAuthenticated } from '../../middleware';
+import { ensureUserExists } from '../../utils';
 
 const sessionRoutes: ApplyRoutes = (router, {
   logger,
@@ -21,8 +22,7 @@ const sessionRoutes: ApplyRoutes = (router, {
     async (req, res) => {
       const session = await knex<WebSession>('webSessions')
         .where('id', req.params.sessionId)
-        .select('userId', 'loggedOutAt', 'createdAt')
-        .orderBy('createdAt', 'DESC')
+        .select('userId', 'guildId', 'loggedOutAt', 'createdAt')
         .first();
 
       if (!session) res.sendStatus(404);

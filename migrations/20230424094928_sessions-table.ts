@@ -4,6 +4,19 @@ export async function up(knex: Knex): Promise<void> {
   await knex.raw('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 
   await knex.schema
+    .createTable('guilds', (table) => {
+      table
+        .text('id')
+        .notNullable()
+        .unique()
+        .primary();
+
+      table
+        .timestamp('createdAt')
+        .notNullable()
+        .defaultTo(knex.fn.now());
+    })
+
     .createTable('users', (table) => {
       table
         .text('id')
@@ -131,7 +144,8 @@ export async function down(knex: Knex): Promise<void> {
     .dropTableIfExists('userNotes')
     .dropTableIfExists('emergencyContacts')
     .dropTableIfExists('webSessions')
-    .dropTableIfExists('users');
+    .dropTableIfExists('users')
+    .dropTableIfExists('guilds');
 
   await knex.raw('DROP TYPE IF EXISTS "emergency_contact_policy"');
   await knex.raw('DROP EXTENSION IF EXISTS "uuid-ossp"');
