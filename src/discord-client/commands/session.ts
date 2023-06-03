@@ -14,6 +14,7 @@ const sessionCommand: Command = {
 
   async execute(interaction, { knex }) {
     const sessionId = await knex.transaction(async (trx) => {
+      // Ensure all dependant records exist
       await Promise.all([
         trx<WebSession>('webSessions')
           .where('userId', interaction.user.id)

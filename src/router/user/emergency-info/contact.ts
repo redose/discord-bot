@@ -3,7 +3,6 @@ import type { RequestHandler } from 'express';
 import Joi from 'joi';
 import type { ApplyRoutes } from '../..';
 import { isAuthenticated, meUrlParam } from '../../../middleware';
-import { ensureUserExists } from '../../../utils';
 
 interface EmergencyContactTable extends Omit<EmergencyContact, 'contact'> {
   contactId: string;
@@ -64,7 +63,12 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex, disc
       if (!req.body.contactId && !req.body.email) res.sendStatus(400);
       else {
         const contact = await knex.transaction(async (trx) => {
-          if (req.body.contactId) await ensureUserExists(knex, req.body.contactId);
+          if (req.body.contactId) {
+            const guild = await discordClient.guilds.fetch(req.session.guildId!);
+            const guildMember = await guild.members.fetch(req.body.userId);
+            if (!guildMember) return null;
+          }
+
           return trx<EmergencyContactTable>('emergencyContacts')
             .insert({
               userId: res.locals.userId,
@@ -75,7 +79,8 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex, disc
             .then(([record]) => getDiscordContact(record));
         });
 
-        res.status(201).json(contact);
+        if (contact === null) res.status(400).json({ message: 'User does not belong to guild' });
+        else res.status(201).json(contact);
       }
     },
   );

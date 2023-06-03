@@ -1,10 +1,11 @@
 import express, { Router } from 'express';
 import PromiseRouter from 'express-promise-router';
 import { createValidator, ExpressJoiInstance } from 'express-joi-validation';
-import userRoutes from './user';
 import { joiErrorHandler } from '../middleware';
 import type { ServerDeps } from '../server';
 import { applyRoutes } from '../utils';
+import userRoutes from './user';
+import guildRoutes from './guild';
 
 interface RouteDeps extends ServerDeps {
   validator: ExpressJoiInstance;
@@ -21,7 +22,7 @@ export default function createRouter(serverDeps: ServerDeps) {
     validator: createValidator({ passError: true }),
   };
 
-  applyRoutes(userRoutes)(router, deps);
+  applyRoutes(userRoutes, guildRoutes)(router, deps);
 
   router.use(joiErrorHandler());
   return router;
