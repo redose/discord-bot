@@ -1,26 +1,37 @@
-import Joi from 'joi';
 import type { ApplyRoutes } from '.';
 import { isAuthenticated } from '../middleware';
 
-const guildRoutes: ApplyRoutes = function guildRoutes(router, { validator, discordClient }) {
+const guildRoutes: ApplyRoutes = function guildRoutes(router, { discordClient }) {
   router.get(
-    '/guild/:guildId/users',
+    '/guild',
     isAuthenticated(),
 
-    validator.query(Joi.object({
-      username: Joi.string().trim(),
-    })
-      .required()),
-
     async (req, res) => {
-      const guild = await discordClient.guilds.fetch(req.session.guildId!);
-      const members = await guild.members.search({
-        query: req.query.username!.toString(),
-      });
-
-      res.json({
-        guildMembers: members.values(),
-      });
+      const guild = await discordClient.guilds.cache
+        .find(({ id }) => id === req.session.guildId);
+      if (!guild) res.sendStatus(404);
+      else {
+        res.json({
+          id: guild.id,
+          name: guild.name,
+          description: guild.description,
+          memberCount: guild.memberCount,
+          createdAt: new Date(guild.createdAt),
+          owner: await guild.members.fetch(guild.ownerId).then((owner) => ({
+            id: owner.id,
+            displayName: owner.displayName,
+            nickname: owner.nickname,
+            presence: owner.presence,
+            avatar: owner.avatar,
+            joinedAt: owner.joinedAt && new Date(owner.joinedAt),
+          })),
+          roles: guild.roles.cache.map((role) => ({
+            id: role.id,
+            name: role.name,
+            createdAt: new Date(role.createdAt),
+          })),
+        });
+      }
     },
   );
 };
