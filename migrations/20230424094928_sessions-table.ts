@@ -4,19 +4,6 @@ export async function up(knex: Knex): Promise<void> {
   await knex.raw('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 
   await knex.schema
-    .createTable('guilds', (table) => {
-      table
-        .text('id')
-        .notNullable()
-        .unique()
-        .primary();
-
-      table
-        .timestamp('createdAt')
-        .notNullable()
-        .defaultTo(knex.fn.now());
-    })
-
     .createTable('users', (table) => {
       table
         .text('id')
@@ -60,9 +47,7 @@ export async function up(knex: Knex): Promise<void> {
 
       table
         .text('guildId')
-        .notNullable()
-        .references('id')
-        .inTable('guilds');
+        .notNullable();
 
       table.timestamp('loggedOutAt');
 

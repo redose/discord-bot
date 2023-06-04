@@ -6,6 +6,7 @@ import type { ServerDeps } from '../server';
 import { applyRoutes } from '../utils';
 import userRoutes from './user';
 import guildRoutes from './guild';
+import sessionRoutes from './session';
 
 interface RouteDeps extends ServerDeps {
   validator: ExpressJoiInstance;
@@ -22,7 +23,7 @@ export default function createRouter(serverDeps: ServerDeps) {
     validator: createValidator({ passError: true }),
   };
 
-  applyRoutes(userRoutes, guildRoutes)(router, deps);
+  applyRoutes(userRoutes, guildRoutes, sessionRoutes)(router, deps);
 
   router.use(joiErrorHandler());
   return router;

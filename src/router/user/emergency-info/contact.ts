@@ -119,7 +119,7 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex, disc
           .where('id', req.params.id);
 
         if (req.body.contactId) {
-          await ensureUserExists(knex, req.body.contactId);
+          // await ensureUserExists(knex, req.body.contactId);
           updateSql.update('contactId', req.body.contactId || null);
         }
 
