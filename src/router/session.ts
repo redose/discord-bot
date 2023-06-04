@@ -1,7 +1,7 @@
 import type { WebSession } from '@redose/types';
 import Joi from 'joi';
-import type { ApplyRoutes } from '..';
-import { isAuthenticated } from '../../middleware';
+import type { ApplyRoutes } from '.';
+import { isAuthenticated } from '../middleware';
 
 const sessionRoutes: ApplyRoutes = (router, {
   logger,
@@ -14,15 +14,14 @@ const sessionRoutes: ApplyRoutes = (router, {
     .required());
 
   router.post(
-    '/user/session/:sessionId',
+    '/session/:sessionId',
     sessionParamValidator,
     isAuthenticated(true),
 
     async (req, res) => {
       const session = await knex<WebSession>('webSessions')
         .where('id', req.params.sessionId)
-        .select('userId', 'loggedOutAt', 'createdAt')
-        .orderBy('createdAt', 'DESC')
+        .select('userId', 'guildId', 'loggedOutAt', 'createdAt')
         .first();
 
       if (!session) res.sendStatus(404);
@@ -41,7 +40,7 @@ const sessionRoutes: ApplyRoutes = (router, {
   );
 
   router.post(
-    '/user/session/:sessionId/logout',
+    '/session/:sessionId/logout',
     sessionParamValidator,
     isAuthenticated(),
 

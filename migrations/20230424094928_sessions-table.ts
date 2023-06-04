@@ -43,8 +43,11 @@ export async function up(knex: Knex): Promise<void> {
         .text('userId')
         .notNullable()
         .references('id')
-        .inTable('users')
-        .onDelete('CASCADE');
+        .inTable('users');
+
+      table
+        .text('guildId')
+        .notNullable();
 
       table.timestamp('loggedOutAt');
 
@@ -65,8 +68,7 @@ export async function up(knex: Knex): Promise<void> {
         .text('userId')
         .notNullable()
         .references('id')
-        .inTable('users')
-        .onDelete('CASCADE');
+        .inTable('users');
 
       table
         .text('contactId')
@@ -127,7 +129,8 @@ export async function down(knex: Knex): Promise<void> {
     .dropTableIfExists('userNotes')
     .dropTableIfExists('emergencyContacts')
     .dropTableIfExists('webSessions')
-    .dropTableIfExists('users');
+    .dropTableIfExists('users')
+    .dropTableIfExists('guilds');
 
   await knex.raw('DROP TYPE IF EXISTS "emergency_contact_policy"');
   await knex.raw('DROP EXTENSION IF EXISTS "uuid-ossp"');
