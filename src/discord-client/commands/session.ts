@@ -8,7 +8,6 @@ const sessionCommand: Command = {
     .setDescription('Begins a new session.'),
 
   async execute(interaction, { logger, knex, client }) {
-    console.log(client.guilds.cache.values());
     const isInValidGuild = interaction.guild?.id
       && client.guilds.cache.map(({ id }) => id).includes(interaction.guild.id);
 

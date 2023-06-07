@@ -4,6 +4,21 @@ export async function up(knex: Knex): Promise<void> {
   await knex.raw('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 
   await knex.schema
+    .createTable('guilds', (table) => {
+      table
+        .text('id')
+        .notNullable()
+        .unique()
+        .primary();
+
+      table.text('announcementsChannelId');
+
+      table
+        .timestamp('createdAt')
+        .notNullable()
+        .defaultTo(knex.fn.now());
+    })
+
     .createTable('users', (table) => {
       table
         .text('id')
@@ -47,7 +62,9 @@ export async function up(knex: Knex): Promise<void> {
 
       table
         .text('guildId')
-        .notNullable();
+        .notNullable()
+        .references('id')
+        .inTable('guilds');
 
       table.timestamp('loggedOutAt');
 
@@ -72,16 +89,60 @@ export async function up(knex: Knex): Promise<void> {
 
       table
         .text('contactId')
+        .notNullable()
         .references('id')
         .inTable('users');
-
-      table.string('email', 320);
 
       table
         .timestamp('createdAt')
         .notNullable()
         .defaultTo(knex.fn.now());
     })
+
+    .createTable('emergencyAlerts', (table) => {
+      table
+        .uuid('id')
+        .notNullable()
+        .defaultTo(knex.raw('uuid_generate_v4()'))
+        .primary();
+
+      table
+        .text('targetUserId')
+        .notNullable()
+        .references('id')
+        .inTable('users');
+
+      table
+        .text('guildId')
+        .notNullable()
+        .references('id')
+        .inTable('guilds');
+
+      table
+        .text('channelId')
+        .notNullable();
+
+      table.text('description');
+
+      table
+        .text('createdBy')
+        .notNullable()
+        .references('id')
+        .inTable('users');
+
+      table
+        .text('closedBy')
+        .references('id')
+        .inTable('users');
+
+      table.timestamp('closedAt');
+
+      table
+        .timestamp('createdAt')
+        .notNullable()
+        .defaultTo(knex.fn.now());
+    })
+
     .createTable('userNotes', (table) => {
       table
         .uuid('id')
