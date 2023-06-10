@@ -24,6 +24,7 @@ module.exports = {
       },
       rules: {
         '@typescript-eslint/lines-between-class-members': 0,
+        'import/prefer-default-export': 0,
       },
     },
     {
