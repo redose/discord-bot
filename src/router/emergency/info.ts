@@ -16,23 +16,29 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
     meUrlParam(),
 
     async (req, res) => {
-      const [user, contacts] = await Promise.all([
-        knex<User>('users')
-          .select(
-            'id AS userId',
-            'emergencyNotes AS notes',
-            'emergencyNotesLastUpdatedAt AS notesLastUpdatedAt',
-            'emergencyContactPolicy AS contactPolicy',
-          )
-          .where('id', res.locals.userId)
-          .first(),
+      const userEmergencyInfo = await knex.raw(/* sql */`
+        SELECT
+          u.id AS user_id,
+          u.emergency_notes AS notes,
+          u.emergency_notes_last_updated_at AS notes_last_updated_at,
+          u.emergency_contact_policy AS contact_policy,
+          json_agg(json_build_object(
+            'id', ec.id,
+            'contactId', ec.contact_id,
+            'email', ec.email,
+            'createdAt', ec.created_at
+          )) AS contacts
+        FROM users AS u
+        INNER JOIN emergency_contacts AS ec
+          ON ec.user_id = u.id
+        WHERE u.id = $1
+        GROUP BY u.id
+        LIMIT 1;
+      `, [res.locals.userId]);
 
-        knex<EmergencyContact>('emergencyContacts').where('userId', res.locals.userId),
-      ]);
-
-      if (!user) res.sendStatus(404);
+      if (!userEmergencyInfo) res.sendStatus(404);
       else if (res.locals.userId !== req.session.userId) res.sendStatus(403);
-      else res.json({ ...user, contacts });
+      else res.json(userEmergencyInfo);
     },
   );
 
@@ -55,9 +61,7 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
 
     async (req, res) => {
       const updatedUser = await knex.transaction(async (trx) => {
-        const baseSql = trx<User>('users').where('id', res.locals.userId);
-
-        const updateSql = baseSql.clone();
+        const updateSql = trx<User>('users').where('id', res.locals.userId);
         if (req.body.notes || req.body.notes === null) {
           updateSql
             .update('emergencyNotes', req.body.notes)
@@ -68,7 +72,8 @@ const userEmergencyRoutes: ApplyRoutes = (router, { validator, knex }) => {
         }
 
         await updateSql;
-        return baseSql
+        return trx<User>('users')
+          .where('id', res.locals.userId)
           .select(
             'emergencyNotes AS notes',
             'emergencyNotesLastUpdatedAt AS notesLastUpdatedAt',

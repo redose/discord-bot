@@ -1,7 +1,14 @@
-import type { User, EmergencyContact } from '@redose/types';
+import type { User, EmergencyContact, EmergencyContactPolicy } from '@redose/types';
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { Command } from '.';
 import type { EmergencyAlertsTable } from '../../tables';
+
+interface EmergencyInfo {
+  notes?: string;
+  notesLastUpdatedAt?: Date;
+  contactPolicy: EmergencyContactPolicy;
+
+}
 
 const alertCommand: Command = {
   meta: new SlashCommandBuilder()
@@ -38,33 +45,33 @@ const alertCommand: Command = {
         ],
       });
     } else {
-      const [emergencyInfo] = await Promise.all([
-        Promise.all([
-          knex<User>('users')
-            .select('emergencyNotes', 'emergencyNotesLastUpdatedAt', 'emergencyContactPolicy')
-            .where('id', user.id)
-            .first()
-            .then((record) => ({
-              notes: record?.emergencyNotes,
-              notesLastUpdatedAt: record?.emergencyNotesLastUpdatedAt,
-              contactPolicy: record?.emergencyContactPolicy,
-            })),
+      const [emergencyInfo] = await knex.transaction(async (trx) => Promise.all([
+        trx.raw(/* sql */`
+          SELECT
+            u.emergency_notes AS notes,
+            u.emergency_notes_last_updated_at AS notes_last_updated_at,
+            u.emergency_contact_policy AS contact_policy,
+            json_agg(json_build_object(
+              'id', ec.id,
+              'contactId', ec.contact_id,
+              'email', ec.email,
+              'createdAt', ec.created_at
+            )) AS contacts
+          FROM users AS u
+          INNER JOIN emergencyContacts AS ec
+            ON ec.user_id = u.id
+          WHERE u.id = $1
+          GROUP BY u.id
+          LIMIT 1;
+        `, [user.id]),
 
-          knex<EmergencyContact>('emergencyContacts AS ec')
-            .innerJoin('users AS u', 'u.id', 'ec.contactId')
-            .where('ec.userId', user.id)
-            .select('u.*')
-            .then((xs) => xs.map(({ contactId }) => contactId)),
-        ])
-          .then(([userRecord, contacts]) => ({ ...userRecord, contacts })),
-
-        knex<EmergencyAlertsTable>('emergencyAlerts').insert({
+        trx<EmergencyAlertsTable>('emergencyAlerts').insert({
           description,
           targetUserId: user.id,
           guildId: interaction.guild!.id,
           channelId: interaction.channel!.id,
         }),
-      ]);
+      ]));
 
       await interaction.reply({
         embeds: [
@@ -87,6 +94,7 @@ const alertCommand: Command = {
               .setColor('Red'),
           ],
         });
+<<<<<<< HEAD
       } else if (!emergencyInfo?.notes?.trim()) {
         await Promise.all([
           interaction.reply({
@@ -98,6 +106,20 @@ const alertCommand: Command = {
             ],
           }),
         ]);
+=======
+      } else {
+        await interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('EMERGENCY ALERT')
+              .setDescription(`@everyone An emergency alert has been triggered for <@${user.id}>.`
+                .concat(description ? `\n\n**Description:** ${description}` : '')
+                .concat(emergencyInfo?.contacts?.length && emergencyInfo?.notes?.trim()
+                  ? '' : '\n\n***NOTE: This user has no emergency notes***'))
+              .setColor('Red'),
+          ],
+        });
+>>>>>>> main
       }
     }
   },

@@ -130,7 +130,11 @@ describe('PATCH /user/emergency-info/contact/:contactId', () => {
         .patch(`/api/user/emergency-info/contact/${contact.id}`)
         .set('Cookie', sessionToken)
         .send({ email: 'notcool@aol.com' })
+<<<<<<< HEAD
         .expect(200)
+=======
+        // .expect(200)
+>>>>>>> main
         .then((res) => res.body),
     )
       .resolves.toEqual({

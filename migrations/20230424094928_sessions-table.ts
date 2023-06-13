@@ -163,11 +163,6 @@ export async function up(knex: Knex): Promise<void> {
         .notNullable();
 
       table
-        .boolean('deleted')
-        .notNullable()
-        .defaultTo(false);
-
-      table
         .timestamp('updatedAt')
         .notNullable()
         .defaultTo(knex.fn.now());
@@ -189,6 +184,7 @@ export async function down(knex: Knex): Promise<void> {
   await knex.schema
     .dropTableIfExists('userNotes')
     .dropTableIfExists('emergencyContacts')
+    .dropTableIfExists('emergencyAlerts')
     .dropTableIfExists('webSessions')
     .dropTableIfExists('users')
     .dropTableIfExists('guilds');

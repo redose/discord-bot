@@ -1,6 +1,6 @@
 import type { ApplyRoutes } from '.';
 import { isAuthenticated } from '../middleware';
-import type { EmergencyAlertsTable } from '../tables';
+import type { GuildsTable } from '../tables';
 
 const guildRoutes: ApplyRoutes = function guildRoutes(router, { knex, discordClient }) {
   router.get(
@@ -13,13 +13,13 @@ const guildRoutes: ApplyRoutes = function guildRoutes(router, { knex, discordCli
       if (!guild) res.sendStatus(404);
       else {
         const [owner, record] = await Promise.all([
-          guild.members.fetch(guild.ownerId).then((owner) => ({
-            id: owner.id,
-            displayName: owner.displayName,
-            nickname: owner.nickname,
-            presence: owner.presence,
-            avatar: owner.avatar,
-            joinedAt: owner.joinedAt && new Date(owner.joinedAt),
+          guild.members.fetch(guild.ownerId).then((ownerRes) => ({
+            id: ownerRes.id,
+            displayName: ownerRes.displayName,
+            nickname: ownerRes.nickname,
+            presence: ownerRes.presence,
+            avatar: ownerRes.avatar,
+            joinedAt: ownerRes.joinedAt && new Date(ownerRes.joinedAt),
           })),
         ]);
 
@@ -29,7 +29,6 @@ const guildRoutes: ApplyRoutes = function guildRoutes(router, { knex, discordCli
           description: guild.description,
           memberCount: guild.memberCount,
           createdAt: new Date(guild.createdAt),
-          owner: await ,
           roles: guild.roles.cache.map((role) => ({
             id: role.id,
             name: role.name,

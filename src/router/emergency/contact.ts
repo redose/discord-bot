@@ -86,7 +86,7 @@ const userEmergencyContactRoutes: ApplyRoutes = (router, { validator, knex, disc
   );
 
   router.patch(
-    '/user/emergency-info/contact/:contactId',
+    '/user/emergency-info/contact/:id',
     isAuthenticated(),
 
     validator.params(Joi.object({
